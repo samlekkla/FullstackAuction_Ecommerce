@@ -119,7 +119,32 @@ builder.Services.AddSwaggerGen(c =>
 // CORS policy
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowSpecificOrigin", policy =>
+    options.AddPolicy("DevelopmentCors", policy =>
+    {
+        policy.SetIsOriginAllowed(origin => true) // Tillåt alla origins i utveckling
+              .AllowAnyMethod()
+              .AllowAnyHeader()
+              .AllowCredentials();
+    });
+
+    options.AddPolicy("ProductionCors", policy =>
+    {
+        policy.WithOrigins(
+                "http://localhost:3000",     // React default
+                "http://localhost:4200",     // Angular default  
+                "http://localhost:5173",     // Vite default
+                "http://localhost:8080",     // Vue default
+                "https://localhost:3000",    // HTTPS variants
+                "https://localhost:4200",
+                "https://localhost:5173", 
+                "https://localhost:8080"
+            )
+            .AllowAnyMethod()
+            .AllowAnyHeader()
+            .AllowCredentials();
+    });
+
+    options.AddPolicy("PublicCors", policy =>
     {
         policy.AllowAnyOrigin()
               .AllowAnyMethod()
@@ -142,7 +167,21 @@ if (app.Environment.IsDevelopment() || app.Environment.IsProduction())
 
 app.UseHttpsRedirection();
 
-app.UseCors("AllowSpecificOrigin");
+// Lägg till CORS debugging middleware i utvecklingsmiljö
+if (app.Environment.IsDevelopment())
+{
+    app.UseCorsDebugMiddleware();
+}
+
+// Använd lämplig CORS policy baserat på miljö
+if (app.Environment.IsDevelopment())
+{
+    app.UseCors("DevelopmentCors");
+}
+else
+{
+    app.UseCors("ProductionCors");
+}
 
 app.UseAuthentication();
 app.UseAuthorization();
